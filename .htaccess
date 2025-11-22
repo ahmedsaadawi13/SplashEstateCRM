@@ -1,0 +1,15 @@
+# FILE: /.htaccess
+# SplashEstate CRM - Root Directory Protection
+
+# Redirect all requests to public directory
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^$ public/ [L]
+    RewriteRule (.*) public/$1 [L]
+</IfModule>
+
+# Prevent access to sensitive files
+<FilesMatch "^\.env">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
