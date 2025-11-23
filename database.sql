@@ -603,6 +603,74 @@ CREATE TABLE `workflow_action_logs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+-- Table: lead_scoring_rules
+-- Define scoring rules for lead qualification
+-- --------------------------------------------------------
+
+CREATE TABLE `lead_scoring_rules` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tenant_id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `rule_type` enum('demographic','behavioral','engagement','custom') NOT NULL COMMENT 'Type of scoring rule',
+  `field_name` varchar(100) NOT NULL COMMENT 'Field to evaluate (e.g., source, status, budget)',
+  `operator` enum('equals','not_equals','contains','not_contains','greater_than','less_than','greater_than_or_equal','less_than_or_equal','is_empty','is_not_empty','in','not_in') NOT NULL,
+  `field_value` varchar(255) DEFAULT NULL COMMENT 'Value to compare against',
+  `points` int(11) NOT NULL DEFAULT 0 COMMENT 'Points to add/subtract when rule matches',
+  `status` enum('active','inactive') DEFAULT 'active',
+  `execution_order` int(11) DEFAULT 0 COMMENT 'Order of rule execution',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_rule_type` (`rule_type`),
+  CONSTRAINT `fk_scoring_rule_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: lead_scores
+-- Stores calculated scores for each lead
+-- --------------------------------------------------------
+
+CREATE TABLE `lead_scores` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `lead_id` int(11) NOT NULL,
+  `score` int(11) NOT NULL DEFAULT 0 COMMENT 'Total calculated score',
+  `grade` enum('A','B','C','D','F') DEFAULT NULL COMMENT 'Letter grade based on score',
+  `score_breakdown` text DEFAULT NULL COMMENT 'JSON breakdown of score by rule',
+  `last_calculated_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `lead_id` (`lead_id`),
+  KEY `idx_score` (`score`),
+  KEY `idx_grade` (`grade`),
+  CONSTRAINT `fk_lead_score_lead` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: lead_score_history
+-- Audit trail of score changes
+-- --------------------------------------------------------
+
+CREATE TABLE `lead_score_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `lead_id` int(11) NOT NULL,
+  `old_score` int(11) DEFAULT 0,
+  `new_score` int(11) NOT NULL,
+  `old_grade` enum('A','B','C','D','F') DEFAULT NULL,
+  `new_grade` enum('A','B','C','D','F') DEFAULT NULL,
+  `changed_by` varchar(100) DEFAULT NULL COMMENT 'What triggered the change (rule_id, manual, import)',
+  `change_reason` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `lead_id` (`lead_id`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `fk_score_history_lead` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
 -- Table: permissions
 -- System permissions for granular access control
 -- --------------------------------------------------------
