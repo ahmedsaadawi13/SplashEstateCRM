@@ -44,6 +44,10 @@ class Database {
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
 
         } catch(PDOException $e) {
+            // In test mode, throw exception instead of dying
+            if (defined('TEST_MODE') && TEST_MODE) {
+                throw $e;
+            }
             echo "Connection Error: " . $e->getMessage();
             die();
         }
