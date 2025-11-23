@@ -86,10 +86,24 @@ $sortOptions = array(
 
 <?php require_once '../app/views/partials/advanced_filters.php'; ?>
 
+<?php
+// Setup bulk operations
+$entityType = 'leads';
+$statusOptions = array(
+    'new' => 'New',
+    'contacted' => 'Contacted',
+    'qualified' => 'Qualified',
+    'won' => 'Won',
+    'lost' => 'Lost'
+);
+require_once '../app/views/partials/bulk_operations.php';
+?>
+
 <?php if (!empty($leads)): ?>
 <table class="table">
     <thead>
         <tr>
+            <th><input type="checkbox" class="bulk-checkbox-header" onchange="toggleSelectAll(this)"></th>
             <th>Name</th>
             <th>Email</th>
             <th>Phone</th>
@@ -103,6 +117,7 @@ $sortOptions = array(
     <tbody>
         <?php foreach ($leads as $lead): ?>
         <tr>
+            <td><input type="checkbox" class="bulk-checkbox" value="<?php echo $lead['id']; ?>"></td>
             <td>
                 <a href="<?php echo BASE_URL; ?>/leads/view/<?php echo $lead['id']; ?>">
                     <?php echo View::escape($lead['first_name'] . ' ' . $lead['last_name']); ?>
