@@ -23,6 +23,9 @@
                 <li><a href="<?php echo BASE_URL; ?>/tasks/index">Tasks</a></li>
                 <li><a href="<?php echo BASE_URL; ?>/calendar/index">Calendar</a></li>
                 <li><a href="<?php echo BASE_URL; ?>/reports/index">Reports</a></li>
+                <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] == 'tenant_admin'): ?>
+                    <li><a href="<?php echo BASE_URL; ?>/subscription/index">Subscription</a></li>
+                <?php endif; ?>
                 <li class="navbar-user">
                     <span><?php echo View::escape($_SESSION['user_name']); ?></span>
                     <a href="<?php echo BASE_URL; ?>/auth/logout">Logout</a>

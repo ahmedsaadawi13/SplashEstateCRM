@@ -26,13 +26,16 @@ CREATE TABLE `tenants` (
   `address` text DEFAULT NULL,
   `logo` varchar(255) DEFAULT NULL,
   `api_key` varchar(64) NOT NULL,
+  `stripe_customer_id` varchar(255) DEFAULT NULL COMMENT 'Stripe customer ID',
+  `stripe_subscription_id` varchar(255) DEFAULT NULL COMMENT 'Stripe subscription ID',
   `status` enum('active','inactive','suspended') DEFAULT 'active',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `slug` (`slug`),
   UNIQUE KEY `api_key` (`api_key`),
-  KEY `idx_status` (`status`)
+  KEY `idx_status` (`status`),
+  KEY `idx_stripe_customer` (`stripe_customer_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -47,6 +50,7 @@ CREATE TABLE `plans` (
   `description` text DEFAULT NULL,
   `price` decimal(10,2) NOT NULL DEFAULT 0.00,
   `billing_cycle` enum('monthly','yearly') DEFAULT 'monthly',
+  `stripe_price_id` varchar(255) DEFAULT NULL COMMENT 'Stripe Price ID for billing',
   `max_leads` int(11) DEFAULT -1 COMMENT '-1 = unlimited',
   `max_properties` int(11) DEFAULT -1,
   `max_agents` int(11) DEFAULT -1,
@@ -55,7 +59,8 @@ CREATE TABLE `plans` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `slug` (`slug`)
+  UNIQUE KEY `slug` (`slug`),
+  KEY `idx_stripe_price` (`stripe_price_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -463,10 +468,10 @@ CREATE TABLE `property_images` (
 -- --------------------------------------------------------
 
 -- Insert default plans
-INSERT INTO `plans` (`name`, `slug`, `description`, `price`, `billing_cycle`, `max_leads`, `max_properties`, `max_agents`, `features`, `status`) VALUES
-('Free Trial', 'free-trial', 'Perfect for getting started', 0.00, 'monthly', 50, 10, 2, 'Basic features, Email support', 'active'),
-('Professional', 'professional', 'For growing agencies', 49.00, 'monthly', 500, 100, 10, 'All features, Priority support, Custom reports', 'active'),
-('Enterprise', 'enterprise', 'For large organizations', 199.00, 'monthly', -1, -1, -1, 'Unlimited everything, 24/7 support, API access, Custom integrations', 'active');
+INSERT INTO `plans` (`name`, `slug`, `description`, `price`, `billing_cycle`, `stripe_price_id`, `max_leads`, `max_properties`, `max_agents`, `features`, `status`) VALUES
+('Free Trial', 'free-trial', 'Perfect for getting started', 0.00, 'monthly', NULL, 50, 10, 2, 'Basic features, Email support', 'active'),
+('Professional', 'professional', 'For growing agencies', 49.00, 'monthly', 'price_professional_monthly', 500, 100, 10, 'All features, Priority support, Custom reports', 'active'),
+('Enterprise', 'enterprise', 'For large organizations', 199.00, 'monthly', 'price_enterprise_monthly', -1, -1, -1, 'Unlimited everything, 24/7 support, API access, Custom integrations', 'active');
 
 -- Insert platform admin user
 -- Password: admin123 (hashed with password_hash)

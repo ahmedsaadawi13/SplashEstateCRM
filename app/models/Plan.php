@@ -98,4 +98,61 @@ class Plan extends Model {
 
         return $stmt->execute();
     }
+
+    /**
+     * Get plan by Stripe price ID
+     * @param string $stripePriceId Stripe price ID
+     * @return mixed Plan data or false
+     */
+    public function getByStripePriceId($stripePriceId) {
+        $sql = "SELECT * FROM {$this->table} WHERE stripe_price_id = :stripe_price_id LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(':stripe_price_id', $stripePriceId);
+        $stmt->execute();
+        return $stmt->fetch();
+    }
+
+    /**
+     * Get plan features as array
+     * @param array $plan Plan data
+     * @return array Features list
+     */
+    public function getFeaturesList($plan) {
+        if (empty($plan['features'])) {
+            return array();
+        }
+        return array_map('trim', explode(',', $plan['features']));
+    }
+
+    /**
+     * Format plan limits for display
+     * @param array $plan Plan data
+     * @return array Formatted limits
+     */
+    public function getFormattedLimits($plan) {
+        return array(
+            'leads' => $plan['max_leads'] == -1 ? 'Unlimited' : number_format($plan['max_leads']),
+            'properties' => $plan['max_properties'] == -1 ? 'Unlimited' : number_format($plan['max_properties']),
+            'agents' => $plan['max_agents'] == -1 ? 'Unlimited' : number_format($plan['max_agents'])
+        );
+    }
+
+    /**
+     * Check if plan allows feature
+     * @param array $plan Plan data
+     * @param int $current Current count
+     * @param string $type Resource type (leads, properties, agents)
+     * @return bool Allowed
+     */
+    public function isWithinLimit($plan, $current, $type) {
+        $limitField = 'max_' . $type;
+        if (!isset($plan[$limitField])) {
+            return false;
+        }
+        // -1 means unlimited
+        if ($plan[$limitField] == -1) {
+            return true;
+        }
+        return $current < $plan[$limitField];
+    }
 }

@@ -63,6 +63,11 @@ if (!defined('MAIL_ENCRYPTION')) define('MAIL_ENCRYPTION', 'tls');
 if (!defined('MAIL_FROM_ADDRESS')) define('MAIL_FROM_ADDRESS', 'noreply@splashestate.com');
 if (!defined('MAIL_FROM_NAME')) define('MAIL_FROM_NAME', 'SplashEstate CRM');
 
+// Stripe Configuration
+if (!defined('STRIPE_PUBLISHABLE_KEY')) define('STRIPE_PUBLISHABLE_KEY', '');
+if (!defined('STRIPE_SECRET_KEY')) define('STRIPE_SECRET_KEY', '');
+if (!defined('STRIPE_WEBHOOK_SECRET')) define('STRIPE_WEBHOOK_SECRET', '');
+
 // Paths
 define('ROOT_PATH', dirname(__DIR__));
 define('APP_PATH', ROOT_PATH . '/app');
