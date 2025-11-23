@@ -262,3 +262,21 @@ function getFileIcon($extension) {
 
     return isset($icons[$extension]) ? $icons[$extension] : 'file';
 }
+
+/**
+ * Trigger webhook event
+ * @param int $tenantId Tenant ID
+ * @param string $eventType Event type (e.g., 'lead.created', 'property.updated')
+ * @param array $data Event data
+ * @return bool Success
+ */
+function triggerWebhook($tenantId, $eventType, $data) {
+    try {
+        require_once APP_PATH . '/helpers/WebhookService.php';
+        $webhookService = new WebhookService();
+        return $webhookService->trigger($tenantId, $eventType, $data);
+    } catch (Exception $e) {
+        error_log('Webhook trigger failed: ' . $e->getMessage());
+        return false;
+    }
+}

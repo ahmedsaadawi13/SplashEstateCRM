@@ -464,6 +464,57 @@ CREATE TABLE `property_images` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+-- Table: webhooks
+-- Webhook endpoint configurations
+-- --------------------------------------------------------
+
+CREATE TABLE `webhooks` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tenant_id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `url` varchar(512) NOT NULL,
+  `secret` varchar(64) DEFAULT NULL COMMENT 'Signing secret for verification',
+  `events` text NOT NULL COMMENT 'Comma-separated list of subscribed events',
+  `status` enum('active','inactive') DEFAULT 'active',
+  `retry_enabled` tinyint(1) DEFAULT 1,
+  `max_retries` int(11) DEFAULT 3,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `fk_webhook_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_webhook_user` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: webhook_logs
+-- Webhook delivery attempt logs
+-- --------------------------------------------------------
+
+CREATE TABLE `webhook_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `webhook_id` int(11) NOT NULL,
+  `event_type` varchar(100) NOT NULL,
+  `payload` text DEFAULT NULL,
+  `response_code` int(11) DEFAULT NULL,
+  `response_body` text DEFAULT NULL,
+  `attempt` int(11) DEFAULT 1,
+  `status` enum('pending','success','failed','retrying') DEFAULT 'pending',
+  `error_message` text DEFAULT NULL,
+  `delivered_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `webhook_id` (`webhook_id`),
+  KEY `idx_event_type` (`event_type`),
+  KEY `idx_status` (`status`),
+  KEY `idx_created` (`created_at`),
+  CONSTRAINT `fk_log_webhook` FOREIGN KEY (`webhook_id`) REFERENCES `webhooks` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
 -- Seed Data
 -- --------------------------------------------------------
 
