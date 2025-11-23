@@ -29,28 +29,50 @@ class LeadsController extends Controller {
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $perPage = 20;
 
-        // Build filters
+        // Build advanced filters
         $filters = array();
-        if (!empty($_GET['status'])) {
-            $filters['status'] = $_GET['status'];
-        }
-        if (!empty($_GET['assigned_to'])) {
-            $filters['assigned_to'] = $_GET['assigned_to'];
-        }
-        if (!empty($_GET['source'])) {
-            $filters['source'] = $_GET['source'];
-        }
-        if (!empty($_GET['search'])) {
-            $filters['search'] = $_GET['search'];
+
+        // Basic filters
+        if (!empty($_GET['status'])) $filters['status'] = $_GET['status'];
+        if (!empty($_GET['assigned_to'])) $filters['assigned_to'] = $_GET['assigned_to'];
+        if (!empty($_GET['source'])) $filters['source'] = $_GET['source'];
+        if (!empty($_GET['interest_type'])) $filters['interest_type'] = $_GET['interest_type'];
+        if (!empty($_GET['search'])) $filters['search'] = $_GET['search'];
+
+        // Budget range filters
+        if (!empty($_GET['budget_min'])) $filters['budget_min'] = $_GET['budget_min'];
+        if (!empty($_GET['budget_max'])) $filters['budget_max'] = $_GET['budget_max'];
+
+        // Date range filters
+        if (!empty($_GET['created_from'])) $filters['created_from'] = $_GET['created_from'];
+        if (!empty($_GET['created_to'])) $filters['created_to'] = $_GET['created_to'];
+
+        // Sorting
+        if (!empty($_GET['sort'])) $filters['sort'] = $_GET['sort'];
+        if (!empty($_GET['direction'])) $filters['direction'] = $_GET['direction'];
+
+        // Check if we should use advanced search
+        $useAdvancedSearch = !empty($filters['budget_min']) || !empty($filters['budget_max']) ||
+                             !empty($filters['created_from']) || !empty($filters['created_to']) ||
+                             !empty($filters['sort']);
+
+        // Get leads using appropriate method
+        if ($useAdvancedSearch) {
+            $leads = $this->leadModel->advancedSearch($tenantId, $filters, $page, $perPage);
+            $totalLeads = $this->leadModel->advancedSearchCount($tenantId, $filters);
+        } else {
+            $leads = $this->leadModel->getLeadsWithUser($tenantId, $page, $perPage, $filters);
+            $totalLeads = $this->leadModel->count($tenantId, $filters);
         }
 
-        // Get leads
-        $leads = $this->leadModel->getLeadsWithUser($tenantId, $page, $perPage, $filters);
-        $totalLeads = $this->leadModel->count($tenantId, $filters);
         $totalPages = ceil($totalLeads / $perPage);
 
-        // Get agents for filter
-        $agents = $this->userModel->getUsersByTenant($tenantId);
+        // Get agents for filter dropdown
+        $agentsList = $this->userModel->getUsersByTenant($tenantId);
+        $agents = array();
+        foreach ($agentsList as $agent) {
+            $agents[$agent['id']] = $agent['first_name'] . ' ' . $agent['last_name'];
+        }
 
         // Get sources for filter
         $sources = $this->leadModel->getSources($tenantId);

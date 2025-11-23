@@ -406,6 +406,30 @@ CREATE TABLE `activity_logs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+-- Table: saved_searches
+-- Stores user saved search filters
+-- --------------------------------------------------------
+
+CREATE TABLE `saved_searches` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tenant_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `module` varchar(50) NOT NULL COMMENT 'leads, clients, properties, deals, tasks',
+  `name` varchar(255) NOT NULL,
+  `filters` text NOT NULL COMMENT 'JSON encoded filter parameters',
+  `is_default` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `user_id` (`user_id`),
+  KEY `idx_module` (`module`),
+  KEY `idx_default` (`is_default`),
+  CONSTRAINT `fk_savedsearch_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_savedsearch_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
 -- Seed Data
 -- --------------------------------------------------------
 

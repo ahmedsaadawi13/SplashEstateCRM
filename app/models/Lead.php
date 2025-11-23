@@ -71,6 +71,129 @@ class Lead extends Model {
     }
 
     /**
+     * Advanced search for leads using SearchHelper
+     * @param int $tenantId Tenant ID
+     * @param array $filters Advanced filter parameters
+     * @param int $page Page number
+     * @param int $perPage Records per page
+     * @return array Leads with user info
+     */
+    public function advancedSearch($tenantId, $filters = array(), $page = 1, $perPage = 20) {
+        require_once APP_PATH . '/helpers/SearchHelper.php';
+        $search = new SearchHelper();
+
+        // Base query
+        $baseQuery = "SELECT l.*,
+                CONCAT(u.first_name, ' ', u.last_name) as assigned_to_name
+                FROM {$this->table} l
+                LEFT JOIN users u ON l.assigned_to = u.id";
+
+        // Apply filters using SearchHelper
+        if (!empty($filters['status'])) {
+            $search->where('l.status', $filters['status']);
+        }
+
+        if (!empty($filters['assigned_to'])) {
+            $search->where('l.assigned_to', $filters['assigned_to']);
+        }
+
+        if (!empty($filters['source'])) {
+            $search->where('l.source', $filters['source']);
+        }
+
+        if (!empty($filters['interest_type'])) {
+            $search->where('l.interest_type', $filters['interest_type']);
+        }
+
+        // Budget range filter
+        if (!empty($filters['budget_min']) || !empty($filters['budget_max'])) {
+            $search->numericRange('l.budget_min',
+                isset($filters['budget_min']) ? $filters['budget_min'] : null,
+                isset($filters['budget_max']) ? $filters['budget_max'] : null
+            );
+        }
+
+        // Date range filter
+        if (!empty($filters['created_from']) || !empty($filters['created_to'])) {
+            $search->dateRange('l.created_at',
+                isset($filters['created_from']) ? $filters['created_from'] : null,
+                isset($filters['created_to']) ? $filters['created_to'] : null
+            );
+        }
+
+        // Full-text search across multiple fields
+        if (!empty($filters['search'])) {
+            $search->search(
+                array('l.first_name', 'l.last_name', 'l.email', 'l.phone', 'l.notes'),
+                $filters['search']
+            );
+        }
+
+        // Sorting
+        $sortField = !empty($filters['sort']) ? $filters['sort'] : 'l.created_at';
+        $sortDir = !empty($filters['direction']) && strtoupper($filters['direction']) === 'ASC' ? 'ASC' : 'DESC';
+        $search->orderBy($sortField, $sortDir);
+
+        // Pagination
+        $offset = ($page - 1) * $perPage;
+        $search->limit($perPage, $offset);
+
+        // Execute query
+        return $search->execute($baseQuery, "l.tenant_id = $tenantId");
+    }
+
+    /**
+     * Get advanced search count
+     * @param int $tenantId Tenant ID
+     * @param array $filters Advanced filter parameters
+     * @return int Total count
+     */
+    public function advancedSearchCount($tenantId, $filters = array()) {
+        require_once APP_PATH . '/helpers/SearchHelper.php';
+        $search = new SearchHelper();
+
+        // Apply same filters as advancedSearch (without pagination)
+        if (!empty($filters['status'])) {
+            $search->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['assigned_to'])) {
+            $search->where('assigned_to', $filters['assigned_to']);
+        }
+
+        if (!empty($filters['source'])) {
+            $search->where('source', $filters['source']);
+        }
+
+        if (!empty($filters['interest_type'])) {
+            $search->where('interest_type', $filters['interest_type']);
+        }
+
+        if (!empty($filters['budget_min']) || !empty($filters['budget_max'])) {
+            $search->numericRange('budget_min',
+                isset($filters['budget_min']) ? $filters['budget_min'] : null,
+                isset($filters['budget_max']) ? $filters['budget_max'] : null
+            );
+        }
+
+        if (!empty($filters['created_from']) || !empty($filters['created_to'])) {
+            $search->dateRange('created_at',
+                isset($filters['created_from']) ? $filters['created_from'] : null,
+                isset($filters['created_to']) ? $filters['created_to'] : null
+            );
+        }
+
+        if (!empty($filters['search'])) {
+            $search->search(
+                array('first_name', 'last_name', 'email', 'phone', 'notes'),
+                $filters['search']
+            );
+        }
+
+        return $search->count($this->table, "tenant_id = $tenantId");
+    }
+
+    /**
      * Get lead by ID with user info
      * @param int $id Lead ID
      * @param int $tenantId Tenant ID

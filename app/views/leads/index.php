@@ -1,30 +1,90 @@
 <?php
 // FILE: /app/views/leads/index.php
 require_once '../app/views/layouts/header.php';
+
+// Configure advanced filter fields for leads
+$module = 'leads';
+$currentFilters = $filters;
+
+$filterFields = array(
+    array(
+        'name' => 'search',
+        'label' => 'Search',
+        'type' => 'text',
+        'placeholder' => 'Name, email, phone, notes...'
+    ),
+    array(
+        'name' => 'status',
+        'label' => 'Status',
+        'type' => 'select',
+        'options' => array(
+            'new' => 'New',
+            'contacted' => 'Contacted',
+            'qualified' => 'Qualified',
+            'won' => 'Won',
+            'lost' => 'Lost'
+        )
+    ),
+    array(
+        'name' => 'source',
+        'label' => 'Source',
+        'type' => 'select',
+        'options' => array(
+            'Website' => 'Website',
+            'Referral' => 'Referral',
+            'Social Media' => 'Social Media',
+            'Advertisement' => 'Advertisement',
+            'Walk-in' => 'Walk-in',
+            'Other' => 'Other'
+        )
+    ),
+    array(
+        'name' => 'interest_type',
+        'label' => 'Interest Type',
+        'type' => 'select',
+        'options' => array(
+            'buy' => 'Buy',
+            'sell' => 'Sell',
+            'rent' => 'Rent'
+        )
+    ),
+    array(
+        'name' => 'assigned_to',
+        'label' => 'Assigned Agent',
+        'type' => 'select',
+        'options' => $agents // Populated by controller
+    ),
+    array(
+        'name' => 'budget',
+        'label' => 'Budget Range',
+        'type' => 'numericrange'
+    ),
+    array(
+        'name' => 'created',
+        'label' => 'Created Date',
+        'type' => 'daterange'
+    )
+);
+
+$sortOptions = array(
+    'l.created_at' => 'Created Date',
+    'l.first_name' => 'First Name',
+    'l.last_name' => 'Last Name',
+    'l.status' => 'Status',
+    'l.budget_min' => 'Budget'
+);
 ?>
 
 <div class="page-header">
     <h1>Leads</h1>
-    <a href="<?php echo BASE_URL; ?>/leads/create" class="btn btn-primary">Create Lead</a>
+    <div class="header-actions">
+        <a href="<?php echo BASE_URL; ?>/export/leadsCSV?<?php echo http_build_query($filters); ?>" class="btn btn-secondary">Export CSV</a>
+        <a href="<?php echo BASE_URL; ?>/export/leadsPDF?<?php echo http_build_query($filters); ?>" class="btn btn-secondary">Export PDF</a>
+        <a href="<?php echo BASE_URL; ?>/leads/create" class="btn btn-primary">Create Lead</a>
+    </div>
 </div>
 
-<div class="filters">
-    <form method="GET" action="<?php echo BASE_URL; ?>/leads/index" class="filter-form">
-        <input type="text" name="search" placeholder="Search..." value="<?php echo isset($filters['search']) ? View::escape($filters['search']) : ''; ?>" class="form-control">
-
-        <select name="status" class="form-control">
-            <option value="">All Statuses</option>
-            <option value="new" <?php echo (isset($filters['status']) && $filters['status'] === 'new') ? 'selected' : ''; ?>>New</option>
-            <option value="contacted" <?php echo (isset($filters['status']) && $filters['status'] === 'contacted') ? 'selected' : ''; ?>>Contacted</option>
-            <option value="qualified" <?php echo (isset($filters['status']) && $filters['status'] === 'qualified') ? 'selected' : ''; ?>>Qualified</option>
-            <option value="won" <?php echo (isset($filters['status']) && $filters['status'] === 'won') ? 'selected' : ''; ?>>Won</option>
-            <option value="lost" <?php echo (isset($filters['status']) && $filters['status'] === 'lost') ? 'selected' : ''; ?>>Lost</option>
-        </select>
-
-        <button type="submit" class="btn btn-secondary">Filter</button>
-        <a href="<?php echo BASE_URL; ?>/leads/index" class="btn btn-link">Clear</a>
-    </form>
-</div>
+<?php require_once '../app/views/partials/advanced_filters.php'; ?>
 
 <?php if (!empty($leads)): ?>
 <table class="table">
