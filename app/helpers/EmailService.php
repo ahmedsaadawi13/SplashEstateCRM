@@ -19,12 +19,13 @@ class EmailService {
      * Constructor - Initialize SMTP settings
      */
     public function __construct() {
-        $this->smtpHost = defined('SMTP_HOST') ? SMTP_HOST : 'localhost';
-        $this->smtpPort = defined('SMTP_PORT') ? SMTP_PORT : 25;
-        $this->smtpUser = defined('SMTP_USER') ? SMTP_USER : '';
-        $this->smtpPass = defined('SMTP_PASS') ? SMTP_PASS : '';
-        $this->smtpFrom = defined('SMTP_FROM') ? SMTP_FROM : 'noreply@splashestate.com';
-        $this->smtpFromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : 'SplashEstate CRM';
+        // Use new MAIL_ constants with fallback to old SMTP_ constants
+        $this->smtpHost = defined('MAIL_HOST') ? MAIL_HOST : (defined('SMTP_HOST') ? SMTP_HOST : 'localhost');
+        $this->smtpPort = defined('MAIL_PORT') ? MAIL_PORT : (defined('SMTP_PORT') ? SMTP_PORT : 25);
+        $this->smtpUser = defined('MAIL_USERNAME') ? MAIL_USERNAME : (defined('SMTP_USER') ? SMTP_USER : '');
+        $this->smtpPass = defined('MAIL_PASSWORD') ? MAIL_PASSWORD : (defined('SMTP_PASS') ? SMTP_PASS : '');
+        $this->smtpFrom = defined('MAIL_FROM_ADDRESS') ? MAIL_FROM_ADDRESS : (defined('SMTP_FROM') ? SMTP_FROM : 'noreply@splashestate.com');
+        $this->smtpFromName = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : (defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : 'SplashEstate CRM');
     }
 
     /**
@@ -50,20 +51,37 @@ class EmailService {
      * @return bool Success status
      */
     public function sendEmail($to, $subject, $body, $altBody = '') {
-        // Prepare headers
-        $headers = array();
-        $headers[] = 'MIME-Version: 1.0';
-        $headers[] = 'Content-type: text/html; charset=utf-8';
-        $headers[] = 'From: ' . $this->smtpFromName . ' <' . $this->smtpFrom . '>';
-        $headers[] = 'Reply-To: ' . $this->smtpFrom;
-        $headers[] = 'X-Mailer: SplashEstate CRM';
-
         // Log email attempt
         $this->logEmail($to, $subject, 'sending');
 
-        // Send email using PHP mail() function
-        // In production, integrate with SMTP library like PHPMailer or SwiftMailer
-        $success = mail($to, $subject, $body, implode("\r\n", $headers));
+        $success = false;
+
+        // Check if SMTP driver is configured
+        if (defined('MAIL_DRIVER') && MAIL_DRIVER === 'smtp' && !empty($this->smtpHost) && !empty($this->smtpUser)) {
+            // Use SMTP
+            require_once APP_PATH . '/helpers/SMTPMailer.php';
+
+            $mailer = new SMTPMailer(array(
+                'host' => $this->smtpHost,
+                'port' => $this->smtpPort,
+                'username' => $this->smtpUser,
+                'password' => $this->smtpPass,
+                'encryption' => defined('MAIL_ENCRYPTION') ? MAIL_ENCRYPTION : 'tls'
+            ));
+
+            $success = $mailer->send($to, $subject, $body, $this->smtpFrom, $this->smtpFromName);
+
+        } else {
+            // Fallback to PHP mail() function
+            $headers = array();
+            $headers[] = 'MIME-Version: 1.0';
+            $headers[] = 'Content-type: text/html; charset=utf-8';
+            $headers[] = 'From: ' . $this->smtpFromName . ' <' . $this->smtpFrom . '>';
+            $headers[] = 'Reply-To: ' . $this->smtpFrom;
+            $headers[] = 'X-Mailer: SplashEstate CRM';
+
+            $success = mail($to, $subject, $body, implode("\r\n", $headers));
+        }
 
         // Log result
         $this->logEmail($to, $subject, $success ? 'sent' : 'failed');

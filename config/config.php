@@ -53,6 +53,16 @@ if (!defined('SESSION_LIFETIME')) define('SESSION_LIFETIME', 7200);
 if (!defined('MAX_UPLOAD_SIZE')) define('MAX_UPLOAD_SIZE', 5242880); // 5MB
 if (!defined('ALLOWED_FILE_TYPES')) define('ALLOWED_FILE_TYPES', 'jpg,jpeg,png,pdf,doc,docx,xls,xlsx');
 
+// Email Configuration
+if (!defined('MAIL_DRIVER')) define('MAIL_DRIVER', 'smtp');
+if (!defined('MAIL_HOST')) define('MAIL_HOST', 'smtp.gmail.com');
+if (!defined('MAIL_PORT')) define('MAIL_PORT', '587');
+if (!defined('MAIL_USERNAME')) define('MAIL_USERNAME', '');
+if (!defined('MAIL_PASSWORD')) define('MAIL_PASSWORD', '');
+if (!defined('MAIL_ENCRYPTION')) define('MAIL_ENCRYPTION', 'tls');
+if (!defined('MAIL_FROM_ADDRESS')) define('MAIL_FROM_ADDRESS', 'noreply@splashestate.com');
+if (!defined('MAIL_FROM_NAME')) define('MAIL_FROM_NAME', 'SplashEstate CRM');
+
 // Paths
 define('ROOT_PATH', dirname(__DIR__));
 define('APP_PATH', ROOT_PATH . '/app');
