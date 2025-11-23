@@ -515,6 +515,77 @@ CREATE TABLE `webhook_logs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+-- Table: permissions
+-- System permissions for granular access control
+-- --------------------------------------------------------
+
+CREATE TABLE `permissions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `slug` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `module` varchar(50) DEFAULT NULL COMMENT 'Module: leads, properties, deals, etc.',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `slug` (`slug`),
+  KEY `idx_module` (`module`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: roles
+-- Custom roles for flexible permission assignment
+-- --------------------------------------------------------
+
+CREATE TABLE `roles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tenant_id` int(11) DEFAULT NULL COMMENT 'NULL for system roles',
+  `name` varchar(100) NOT NULL,
+  `slug` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `is_system` tinyint(1) DEFAULT 0 COMMENT 'System roles cannot be deleted',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `idx_slug` (`slug`),
+  CONSTRAINT `fk_role_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: role_permissions
+-- Maps permissions to roles
+-- --------------------------------------------------------
+
+CREATE TABLE `role_permissions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `role_id` int(11) NOT NULL,
+  `permission_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `role_permission` (`role_id`, `permission_id`),
+  KEY `permission_id` (`permission_id`),
+  CONSTRAINT `fk_roleperm_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_roleperm_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: user_roles
+-- Assigns roles to users
+-- --------------------------------------------------------
+
+CREATE TABLE `user_roles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `role_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_role` (`user_id`, `role_id`),
+  KEY `role_id` (`role_id`),
+  CONSTRAINT `fk_userrole_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_userrole_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
 -- Seed Data
 -- --------------------------------------------------------
 
@@ -620,5 +691,96 @@ INSERT INTO `invoices` (`tenant_id`, `subscription_id`, `invoice_number`, `amoun
 INSERT INTO `payments` (`tenant_id`, `invoice_id`, `amount`, `payment_method`, `transaction_id`, `status`, `payment_date`) VALUES
 (1, 1, 52.43, 'credit_card', 'txn_1234567890', 'completed', '2025-01-10 15:30:00'),
 (2, 2, 212.93, 'credit_card', 'txn_0987654321', 'completed', '2025-01-12 11:20:00');
+
+-- Insert default permissions
+INSERT INTO `permissions` (`name`, `slug`, `description`, `module`) VALUES
+-- Lead permissions
+('View Leads', 'leads.view', 'View leads list and details', 'leads'),
+('Create Leads', 'leads.create', 'Create new leads', 'leads'),
+('Edit Leads', 'leads.edit', 'Edit existing leads', 'leads'),
+('Delete Leads', 'leads.delete', 'Delete leads', 'leads'),
+('Export Leads', 'leads.export', 'Export leads data', 'leads'),
+
+-- Client permissions
+('View Clients', 'clients.view', 'View clients list and details', 'clients'),
+('Create Clients', 'clients.create', 'Create new clients', 'clients'),
+('Edit Clients', 'clients.edit', 'Edit existing clients', 'clients'),
+('Delete Clients', 'clients.delete', 'Delete clients', 'clients'),
+
+-- Property permissions
+('View Properties', 'properties.view', 'View properties list and details', 'properties'),
+('Create Properties', 'properties.create', 'Create new properties', 'properties'),
+('Edit Properties', 'properties.edit', 'Edit existing properties', 'properties'),
+('Delete Properties', 'properties.delete', 'Delete properties', 'properties'),
+('Manage Property Images', 'properties.images', 'Upload and manage property images', 'properties'),
+
+-- Deal permissions
+('View Deals', 'deals.view', 'View deals list and details', 'deals'),
+('Create Deals', 'deals.create', 'Create new deals', 'deals'),
+('Edit Deals', 'deals.edit', 'Edit existing deals', 'deals'),
+('Delete Deals', 'deals.delete', 'Delete deals', 'deals'),
+
+-- Task permissions
+('View Tasks', 'tasks.view', 'View tasks list and details', 'tasks'),
+('Create Tasks', 'tasks.create', 'Create new tasks', 'tasks'),
+('Edit Tasks', 'tasks.edit', 'Edit existing tasks', 'tasks'),
+('Delete Tasks', 'tasks.delete', 'Delete tasks', 'tasks'),
+
+-- Report permissions
+('View Reports', 'reports.view', 'Access reports and analytics', 'reports'),
+('Export Reports', 'reports.export', 'Export report data', 'reports'),
+
+-- Settings permissions
+('Manage Settings', 'settings.manage', 'Manage system settings', 'settings'),
+('Manage Users', 'users.manage', 'Manage users and agents', 'settings'),
+('Manage Roles', 'roles.manage', 'Manage roles and permissions', 'settings'),
+('Manage Webhooks', 'webhooks.manage', 'Configure webhooks', 'settings'),
+('View Subscription', 'subscription.view', 'View subscription details', 'settings'),
+('Manage Subscription', 'subscription.manage', 'Upgrade/downgrade subscription', 'settings');
+
+-- Insert default system roles
+INSERT INTO `roles` (`tenant_id`, `name`, `slug`, `description`, `is_system`) VALUES
+(NULL, 'Tenant Admin', 'tenant_admin', 'Full access to tenant resources', 1),
+(NULL, 'Agent', 'agent', 'Standard agent access', 1),
+(NULL, 'Sales Manager', 'sales_manager', 'Manage sales team and deals', 1),
+(NULL, 'Viewer', 'viewer', 'Read-only access', 1);
+
+-- Assign permissions to Tenant Admin role (all permissions)
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT 1, id FROM permissions;
+
+-- Assign permissions to Agent role
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT 2, id FROM permissions WHERE slug IN (
+    'leads.view', 'leads.create', 'leads.edit',
+    'clients.view', 'clients.create', 'clients.edit',
+    'properties.view',
+    'deals.view', 'deals.create', 'deals.edit',
+    'tasks.view', 'tasks.create', 'tasks.edit', 'tasks.delete',
+    'reports.view'
+);
+
+-- Assign permissions to Sales Manager role
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT 3, id FROM permissions WHERE slug IN (
+    'leads.view', 'leads.create', 'leads.edit', 'leads.delete', 'leads.export',
+    'clients.view', 'clients.create', 'clients.edit',
+    'properties.view',
+    'deals.view', 'deals.create', 'deals.edit', 'deals.delete',
+    'tasks.view', 'tasks.create', 'tasks.edit', 'tasks.delete',
+    'reports.view', 'reports.export',
+    'users.manage'
+);
+
+-- Assign permissions to Viewer role
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT 4, id FROM permissions WHERE slug IN (
+    'leads.view',
+    'clients.view',
+    'properties.view',
+    'deals.view',
+    'tasks.view',
+    'reports.view'
+);
 
 -- End of seed data

@@ -280,3 +280,57 @@ function triggerWebhook($tenantId, $eventType, $data) {
         return false;
     }
 }
+
+/**
+ * Check if user has permission
+ * @param int $userId User ID
+ * @param string $permissionSlug Permission slug (e.g., 'leads.create')
+ * @return bool Has permission
+ */
+function hasPermission($userId, $permissionSlug) {
+    static $userPermissions = array();
+
+    // Cache permissions per user
+    if (!isset($userPermissions[$userId])) {
+        require_once APP_PATH . '/models/Role.php';
+        $roleModel = new Role();
+        $userPermissions[$userId] = $roleModel->getUserPermissions($userId);
+    }
+
+    return in_array($permissionSlug, $userPermissions[$userId]);
+}
+
+/**
+ * Check if current session user has permission
+ * @param string $permissionSlug Permission slug
+ * @return bool Has permission
+ */
+function can($permissionSlug) {
+    if (!isset($_SESSION['user_id'])) {
+        return false;
+    }
+
+    // Platform admins have all permissions
+    if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'platform_admin') {
+        return true;
+    }
+
+    return hasPermission($_SESSION['user_id'], $permissionSlug);
+}
+
+/**
+ * Get user's roles
+ * @param int $userId User ID
+ * @return array Roles
+ */
+function getUserRoles($userId) {
+    static $userRoles = array();
+
+    if (!isset($userRoles[$userId])) {
+        require_once APP_PATH . '/models/Role.php';
+        $roleModel = new Role();
+        $userRoles[$userId] = $roleModel->getUserRoles($userId);
+    }
+
+    return $userRoles[$userId];
+}
