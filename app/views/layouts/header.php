@@ -21,6 +21,7 @@
                 <li><a href="<?php echo BASE_URL; ?>/properties/index">Properties</a></li>
                 <li><a href="<?php echo BASE_URL; ?>/deals/index">Deals</a></li>
                 <li><a href="<?php echo BASE_URL; ?>/tasks/index">Tasks</a></li>
+                <li><a href="<?php echo BASE_URL; ?>/calendar/index">Calendar</a></li>
                 <li><a href="<?php echo BASE_URL; ?>/reports/index">Reports</a></li>
                 <li class="navbar-user">
                     <span><?php echo View::escape($_SESSION['user_name']); ?></span>
