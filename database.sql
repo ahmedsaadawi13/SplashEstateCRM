@@ -515,6 +515,94 @@ CREATE TABLE `webhook_logs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+-- Table: workflows
+-- Automated workflow definitions
+-- --------------------------------------------------------
+
+CREATE TABLE `workflows` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tenant_id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `trigger_type` enum('lead_created','lead_updated','lead_status_changed','client_created','property_created','deal_created','deal_status_changed','deal_won','deal_lost','task_created','task_completed','scheduled') NOT NULL,
+  `trigger_config` text DEFAULT NULL COMMENT 'JSON configuration for trigger',
+  `conditions` text DEFAULT NULL COMMENT 'JSON array of conditions',
+  `status` enum('active','inactive') DEFAULT 'active',
+  `execution_order` int(11) DEFAULT 0,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_trigger` (`trigger_type`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `fk_workflow_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_workflow_user` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: workflow_actions
+-- Actions to execute when workflow triggers
+-- --------------------------------------------------------
+
+CREATE TABLE `workflow_actions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `workflow_id` int(11) NOT NULL,
+  `action_type` enum('send_email','create_task','update_field','assign_to_user','add_tag','send_webhook','wait','create_deal','send_notification') NOT NULL,
+  `action_config` text NOT NULL COMMENT 'JSON configuration for action',
+  `execution_order` int(11) DEFAULT 0,
+  `delay_minutes` int(11) DEFAULT 0 COMMENT 'Delay before executing action',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `workflow_id` (`workflow_id`),
+  KEY `idx_order` (`execution_order`),
+  CONSTRAINT `fk_action_workflow` FOREIGN KEY (`workflow_id`) REFERENCES `workflows` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: workflow_executions
+-- Log of workflow execution instances
+-- --------------------------------------------------------
+
+CREATE TABLE `workflow_executions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `workflow_id` int(11) NOT NULL,
+  `trigger_data` text DEFAULT NULL COMMENT 'JSON data that triggered workflow',
+  `status` enum('pending','running','completed','failed','cancelled') DEFAULT 'pending',
+  `started_at` timestamp NULL DEFAULT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `error_message` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `workflow_id` (`workflow_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_created` (`created_at`),
+  CONSTRAINT `fk_execution_workflow` FOREIGN KEY (`workflow_id`) REFERENCES `workflows` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: workflow_action_logs
+-- Detailed log of individual action executions
+-- --------------------------------------------------------
+
+CREATE TABLE `workflow_action_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `execution_id` int(11) NOT NULL,
+  `action_id` int(11) NOT NULL,
+  `status` enum('pending','completed','failed','skipped') DEFAULT 'pending',
+  `result` text DEFAULT NULL COMMENT 'Action execution result',
+  `error_message` text DEFAULT NULL,
+  `executed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `execution_id` (`execution_id`),
+  KEY `action_id` (`action_id`),
+  CONSTRAINT `fk_actionlog_execution` FOREIGN KEY (`execution_id`) REFERENCES `workflow_executions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_actionlog_action` FOREIGN KEY (`action_id`) REFERENCES `workflow_actions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
 -- Table: permissions
 -- System permissions for granular access control
 -- --------------------------------------------------------
