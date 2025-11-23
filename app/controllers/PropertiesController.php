@@ -138,6 +138,9 @@ class PropertiesController extends Controller {
         $formData['tenant_id'] = $tenantId;
         $formData['status'] = 'available';
 
+        // Geocode address to get latitude/longitude
+        $this->geocodePropertyAddress($formData);
+
         $propertyId = $this->propertyModel->createProperty($formData);
 
         if ($propertyId) {
@@ -202,6 +205,9 @@ class PropertiesController extends Controller {
             'listing_agent_id' => $this->sanitize($_POST['listing_agent_id'])
         );
 
+        // Geocode address to get updated latitude/longitude
+        $this->geocodePropertyAddress($formData);
+
         if ($this->propertyModel->update($id, $tenantId, $formData)) {
             logActivity($this->getUserId(), $tenantId, 'updated', 'property', $id);
             $this->setFlash('success', 'Property updated successfully');
@@ -209,6 +215,40 @@ class PropertiesController extends Controller {
         } else {
             $this->setFlash('error', 'Failed to update property');
             $this->redirect('properties/edit/' . $id);
+        }
+    }
+
+    /**
+     * Geocode property address to get latitude/longitude
+     * @param array &$formData Property data (passed by reference)
+     */
+    private function geocodePropertyAddress(&$formData) {
+        // Check if Google Maps is configured
+        if (!defined('GOOGLE_MAPS_API_KEY') || empty(GOOGLE_MAPS_API_KEY)) {
+            return;
+        }
+
+        // Build full address
+        $fullAddress = trim(
+            $formData['address'] . ', ' .
+            $formData['city'] . ', ' .
+            $formData['state'] . ' ' .
+            $formData['zip']
+        );
+
+        try {
+            require_once APP_PATH . '/helpers/GoogleMapsService.php';
+            $mapsService = new GoogleMapsService();
+
+            $result = $mapsService->geocodeAddress($fullAddress);
+
+            if ($result && isset($result['latitude']) && isset($result['longitude'])) {
+                $formData['latitude'] = $result['latitude'];
+                $formData['longitude'] = $result['longitude'];
+            }
+        } catch (Exception $e) {
+            error_log('Geocoding failed: ' . $e->getMessage());
+            // Don't fail the property creation/update if geocoding fails
         }
     }
 
