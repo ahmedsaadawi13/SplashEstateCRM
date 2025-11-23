@@ -29,7 +29,7 @@ A complete multi-tenant Real Estate CRM SaaS system built with pure PHP and MySQ
 ### 1. Clone or Download
 
 ```bash
-git clone https://github.com/yourusername/SplashEstateCRM.git
+git clone https://github.com/ahmedsaadawi13/SplashEstateCRM.git
 cd SplashEstateCRM
 ```
 
@@ -497,9 +497,9 @@ server {
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/yourusername/SplashEstateCRM/issues
+- GitHub Issues: https://github.com/ahmedsaadawi13/SplashEstateCRM/issues
 - Documentation: https://docs.splashestate.com
-- Email: support@splashestate.com
+- Email: ahmed.sha3ban13@gmail.com
 
 ## License
 
